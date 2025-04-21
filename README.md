@@ -43,6 +43,8 @@ Referensi:
 
 Dataset diambil dari Kaggle: [`netflix-tv-shows-and-movies`.](https://www.kaggle.com/datasets/victorsoeiro/netflix-tv-shows-and-movies?select=titles.csv)
 
+Dataset ini dibuat untuk mencantumkan semua tayangan yang tersedia di layanan streaming Netflix, serta menganalisis data tersebut untuk menemukan fakta-fakta menarik. Data ini dikumpulkan pada bulan Juli 2022 dan mencakup tayangan yang tersedia di wilayah Amerika Serikat.
+
 ### Jumlah & Fitur
 
 #### Deskripsi Dataset
