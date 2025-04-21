@@ -39,7 +39,7 @@ Goyani, M., & Chaurasiya, N. (2020). A review of movie recommendation system: Li
   - Menggunakan pendekatan Neural Collaborative Filtering berbasis interaksi dummy.
   - Memanfaatkan embedding untuk memetakan pengguna dan item ke dalam vektor berdimensi rendah.
 
-## 📊 Data Understanding
+## Data Understanding
 
 Dataset diambil dari Kaggle: [`netflix-tv-shows-and-movies`.](https://www.kaggle.com/datasets/victorsoeiro/netflix-tv-shows-and-movies?select=titles.csv)
 
@@ -81,7 +81,7 @@ top_directors = credits_df[credits_df['role'] == 'DIRECTOR']['name'].value_count
 - Aktor: Boman Irani, Kareena Kapoor Khan
 - Sutradara: Raúl Campos, Jan Suter
 
-## 🧹 Data Preparation
+## Data Preparation
 
 ### Duplicate Handling
 ```
@@ -146,7 +146,7 @@ titles_df['content'] = titles_df.apply(combine_features, axis=1)
 - Aktor & sutradara digabung berdasarkan `id` dan ditambahkan sebagai fitur teks.
 - Kolom baru `content` digabung dari title, deskripsi, genre, aktor, sutradara.
 
-## 🤖 Modeling and Result
+## Modeling and Result
 
 ### Content-Based Filtering
 
@@ -214,6 +214,9 @@ Content-Based Filtering (TF-IDF + Cosine Similarity)
 
 
 ### Collaborative Filtering
+
+- Algoritma: Neural Collaborative Filtering (dengan dummy rating)
+- Fungsi `recommend_collaborative(user_name, n=5)` untuk prediksi berdasarkan pengguna.
 
 Sebelum memulai, kita memerlukan re-prep data terlebih dahulu.
 ```
@@ -337,46 +340,133 @@ plt.grid(True)
 plt.show()
 
 ```
+<p align='center'>
+      <img src ="https://github.com/faRIZky/sistem-rekomendasi_achmad-fariz/blob/main/images/RMSE_eval.png?raw=true" alt="RMSE"> 
+</p>
 
-- Algoritma: Neural Collaborative Filtering (dengan dummy rating)
-- Fungsi `recommend_collaborative(user_name, n=5)` untuk prediksi berdasarkan pengguna.
+Model tidak menunjukkan tanda-tanda overfitting karena gap antara train dan validation RMSE tetap relatif kecil dan keduanya menurun seiring waktu. Ini mengindikasikan bahwa model belajar dengan baik tanpa kehilangan performa di data baru.
 
-**Kelebihan:**
-- Personalized, menangkap pola kompleks.
+```
+def recommend_collaborative(user_name, n=10):
+    # Cek user
+    if user_name not in user2user_encoded:
+        return f"User '{user_name}' tidak ditemukan."
 
-**Kekurangan:**
-- Cold start & membutuhkan interaksi data yang cukup.
+    # Encode user
+    user_id = user2user_encoded[user_name]
 
-<!-- IMAGE HERE: plot RMSE per epoch -->
+    # Buat daftar semua item_id
+    all_item_ids = credits_df['item_id'].unique()
 
-## 🧪 Evaluation
+    # Ambil semua item yang belum pernah ditonton user
+    items_watched_by_user = credits_df[credits_df['user_id'] == user_id]['item_id'].tolist()
+    items_not_watched = np.setdiff1d(all_item_ids, items_watched_by_user)
 
-### 📈 Content-Based Filtering
+    # Buat input untuk prediksi
+    user_input = np.array([[user_id, item_id] for item_id in items_not_watched])
 
-- **Metrik:** Cosine Similarity  
-- **Formula:**  
+    # Prediksi skor dari model
+    predicted_ratings = model.predict(user_input).flatten()
+
+    # Ambil top-N rekomendasi
+    top_indices = predicted_ratings.argsort()[-n:][::-1]
+    top_item_ids = items_not_watched[top_indices]
+
+    # Ambil judul film dari item_id
+    recommended_titles = titles_df[titles_df['id'].isin([item_encoded2item[item] for item in top_item_ids])]
+    
+    return recommended_titles[['title', 'type', 'release_year']].reset_index(drop=True)
+```
+Fungsi recommend_collaborative() memberikan rekomendasi film untuk seorang user berdasarkan pendekatan collaborative filtering. Fungsi ini memprediksi skor kesukaan untuk semua film yang belum ditonton user, menggunakan model neural network. Lalu, sistem menampilkan N film dengan prediksi skor tertinggi sebagai rekomendasi yang dipersonalisasi.
+
+```
+recommend_collaborative("Robert De Niro", n=5)
+```
+| No | Title                                                             | Type  | Release Year |
+|----|-------------------------------------------------------------------|-------|---------------|
+| 1  | The Departed                                                     | MOVIE | 2006          |
+| 2  | The Fighter                                                      | MOVIE | 2010          |
+| 3  | Les Misérables                                                   | MOVIE | 2012          |
+| 4  | Rolling Thunder Revue: A Bob Dylan Story by Martin Scorsese     | MOVIE | 2019          |
+| 5  | tick, tick... BOOM!                                              | MOVIE | 2021          |
+
+5 film di atas merupakan top 5 rekomendasi dari sistem.
+
+Collaborative Filtering (Neural Collaborative Filtering dengan TensorFlow)
+- Kelebihan:
+  - Menangkap pola kompleks antar user dan item melalui embedding.
+
+  - Rekomendasi personalized: Bisa menyarankan film yang sangat berbeda kontennya, tapi sering disukai oleh user yang mirip.
+
+  - Model non-linear: Neural network menangkap relasi yang tidak bisa ditangkap metode klasik (misalnya dot product saja).
+
+- Kekurangan:
+  - Butuh banyak interaksi: Performanya sangat tergantung dari jumlah data user-item (di kasus ini pakai dummy rating).
+
+  - Cold-start problem: User/item baru yang belum punya cukup interaksi akan sulit direkomendasikan.
+
+  - Komputasi lebih berat: Dibandingkan dengan cosine similarity, proses training NCF butuh waktu dan resource lebih besar.
+
+## Evaluation
+**Evaluation & Business Understanding Integration**
+
+---
+
+### 1. Evaluation for Content-Based Filtering (CBF)
+
+**Metric Used:** Cosine Similarity
+
+**Explanation:**
+Cosine Similarity mengukur sejauh mana dua vektor (dalam hal ini representasi TF-IDF dari film) serupa satu sama lain dengan menghitung nilai cosinus dari sudut di antara keduanya.
+
+**Formula:**
 ( A · B) / (||A|| * ||B||)
 
-- **Interpretasi:** Semakin dekat ke 1, makin mirip.
-- **Kaitan bisnis:** Memahami kesukaan user berdasarkan konten, meningkatkan kepuasan dan engagement.
+**Interpretasi:**
+Nilai cosine similarity berkisar dari 0 hingga 1, di mana 1 berarti dua item sangat mirip. Dalam konteks ini, semakin tinggi nilai similarity antar film, semakin besar kemungkinan film tersebut relevan untuk direkomendasikan.
 
-### 📉 Collaborative Filtering
+**Business Connection:**
+- CBF menjawab kebutuhan pengguna untuk menemukan film yang mirip dengan yang sudah disukai sebelumnya.
+- Dengan memberikan rekomendasi berdasarkan genre dan deskripsi yang mirip, pengguna akan merasa sistem "mengerti selera mereka", meningkatkan retensi dan keterlibatan.
 
-- **Metrik:** Root Mean Squared Error (RMSE)  
-- **Formula:**  
+---
+
+### 2. Evaluation for Collaborative Filtering (CF)
+
+**Metric Used:** Root Mean Squared Error (RMSE)
+
+**Explanation:**
+RMSE mengukur perbedaan antara prediksi model dengan data aktual. Semakin kecil RMSE, semakin akurat prediksi model.
+
+**Formula:**
 √((1/n) * Σ(yi - ŷi)²)
 
-- **Interpretasi:** Semakin kecil RMSE, semakin akurat model.
-- **Kaitan bisnis:** Model mampu menyarankan film yang belum diketahui user tapi disukai oleh komunitas serupa.
+**Interpretasi:**
+Nilai RMSE yang rendah menunjukkan bahwa model berhasil memperkirakan preferensi pengguna dengan baik.
 
-## 🧠 Business Impact Revisited
+**Business Connection:**
+- RMSE digunakan untuk mengevaluasi apakah rekomendasi model mendekati kenyataan (meski berbasis dummy rating).
+- CF mampu merekomendasikan film yang mungkin tidak terpikirkan oleh pengguna tapi disukai oleh user serupa, membuka potensi penemuan film baru.
 
-- **Problem:** Kesulitan menemukan film yang relevan.
-- **Goals:** Memberikan rekomendasi personal dan luas.
-- **Solution:** Kombinasi CBF & CF menyasar dua tipe user:
-  - User baru → CBF.
-  - User aktif → CF.
-- Evaluasi berdasarkan kemiripan dan prediksi performa rekomendasi yang diharapkan memperkuat engagement pengguna dan eksplorasi konten.
+---
 
+### 3. Relevance to Business Understanding
 
-## Selengkapnya harap periksa ipynb saya.
+**Problem Statements:**
+1. CBF menjawab kebutuhan untuk merekomendasikan film berdasarkan preferensi konten masa lalu.
+2. CF menjawab tantangan dalam menemukan film baru melalui perilaku pengguna lain yang mirip.
+
+**Goals:**
+- CBF memberikan personalisasi berdasarkan konten.
+- CF memperluas rekomendasi ke film yang mungkin tidak memiliki konten serupa namun relevan berdasarkan pola pengguna lain.
+
+**Solution Approaches:**
+- Kombinasi dua pendekatan ini memberikan sistem yang lebih menyeluruh: CBF cocok untuk pengguna baru (cold start) dan CF baik untuk pengguna aktif.
+- Metrik evaluasi digunakan untuk memastikan bahwa model tidak hanya bekerja secara matematis, tapi juga memberikan nilai bisnis dengan meningkatkan user engagement dan kemungkinan eksplorasi konten.
+
+---
+
+### Final Notes
+- Evaluasi dilakukan dengan metrik yang sesuai untuk masing-masing pendekatan.
+- Setiap metrik memiliki interpretasi yang berhubungan langsung dengan kualitas pengalaman pengguna.
+- Kombinasi CBF dan CF membentuk sistem rekomendasi yang kuat, scalable, dan adaptif terhadap berbagai kebutuhan pengguna Netflix.
