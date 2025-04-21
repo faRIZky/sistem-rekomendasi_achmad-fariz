@@ -178,6 +178,10 @@ titles_df['content'] = titles_df.apply(combine_features, axis=1)
 
 ### Content-Based Filtering
 Content-Based Filtering adalah pendekatan sistem rekomendasi yang menyarankan film berdasarkan kemiripan konten, dalam hal ini genre dari film. Menggunakan teknik TF-IDF (Term Frequency-Inverse Document Frequency), sistem mengekstrak fitur penting dari kolom genre dan mengubahnya menjadi vektor numerik. Lalu, dengan menghitung cosine similarity antara film yang ditonton pengguna dan film lainnya, sistem dapat merekomendasikan film yang mirip secara konten. Metode ini sangat berguna saat tidak ada data interaksi antar pengguna, dan cocok untuk pengguna baru karena hanya bergantung pada preferensi kontennya sendiri.
+
+- Algoritma: TF-IDF + Cosine Similarity
+- Fungsi `recommend_content_based(title, n=5)` mengembalikan top-N film mirip.
+  
 ```
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -206,12 +210,18 @@ def recommend_content_based(title, n=5):
     return titles_df[['title', 'type', 'release_year']].iloc[movie_indices]
 
 ```
-- Algoritma: TF-IDF + Cosine Similarity
-- Fungsi `recommend_content_based(title, n=5)` mengembalikan top-N film mirip.
-
+Langkah ini bertujuan untuk membangun sistem **Content-Based Filtering**. Dengan menggunakan `TfidfVectorizer`, kita mengubah teks pada kolom `content` menjadi representasi numerik berbasis frekuensi kata, lalu menghitung kemiripan antar film menggunakan **cosine similarity**. Hasilnya adalah matriks yang menunjukkan seberapa mirip satu film dengan yang lain berdasarkan kontennya, sehingga sistem bisa merekomendasikan film serupa.
 ```
 recommend_content_based("Narcos", n=5)
 ```
+Fungsi ini digunakan untuk **memberikan rekomendasi film** berbasis konten. Saat pengguna memasukkan judul film, sistem akan:
+
+1. Mencari indeks film tersebut dalam dataset.
+2. Mengambil skor kemiripan (cosine similarity) dengan semua film lainnya.
+3. Mengurutkan berdasarkan skor tertinggi dan **mengabaikan film itu sendiri**.
+4. Mengembalikan daftar top-`n` film paling mirip berdasarkan konten seperti deskripsi, genre, aktor, dll.
+
+Pendekatan ini memungkinkan rekomendasi yang tetap relevan bahkan tanpa interaksi pengguna lainnya.
 
 | Title                                | Type | Release Year |
 |--------------------------------------|------|---------------|
