@@ -45,8 +45,36 @@ Dataset diambil dari Kaggle: [`netflix-tv-shows-and-movies`.](https://www.kaggle
 
 ### Jumlah & Fitur
 
-- **titles.csv**: 14 fitur, termasuk title, genres, description, imdb_score, tmdb_score.
-- **credits.csv**: informasi aktor dan sutradara.
+#### Deskripsi Dataset
+
+##### 1. `/content/dataset/credits.csv` (5 kolom)
+Dataset ini berisi lebih dari 50.000 data kredit dari aktor dan sutradara yang terlibat dalam judul-judul Netflix. Terdiri dari 5 kolom informasi sebagai berikut:
+
+- **person_id**: ID individu berdasarkan JustWatch.
+- **id**: ID judul berdasarkan JustWatch.
+- **name**: Nama aktor atau sutradara.
+- **character_name**: Nama karakter (jika tersedia).
+- **role**: Peran sebagai ACTOR atau DIRECTOR.
+
+##### 2. `/content/dataset/titles.csv` (15 kolom)
+Dataset ini berisi lebih dari 5.000 judul unik yang tersedia di Netflix, dengan 15 kolom informasi sebagai berikut:
+
+- **id**: ID judul berdasarkan JustWatch.
+- **title**: Nama judul film atau acara.
+- **show_type**: Tipe tayangan, bisa berupa MOVIE atau SHOW.
+- **description**: Deskripsi singkat tentang judul.
+- **release_year**: Tahun rilis.
+- **age_certification**: Sertifikasi usia (rating umur).
+- **runtime**: Durasi film atau episode (jika berupa SHOW).
+- **genres**: Daftar genre dari judul tersebut.
+- **production_countries**: Daftar negara yang memproduksi judul.
+- **seasons**: Jumlah musim (jika merupakan SHOW).
+- **imdb_id**: ID judul pada situs IMDb.
+- **imdb_score**: Skor rating dari IMDb.
+- **imdb_votes**: Jumlah voting pada IMDb.
+- **tmdb_popularity**: Skor popularitas dari TMDB.
+- **tmdb_score**: Skor rating dari TMDB.
+
 
 <p align='center'>
       <img src ="https://github.com/faRIZky/sistem-rekomendasi_achmad-fariz/blob/main/images/tipe%20konten.png?raw=true" alt="konten"> 
