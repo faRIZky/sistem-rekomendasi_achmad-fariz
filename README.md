@@ -177,7 +177,7 @@ titles_df['content'] = titles_df.apply(combine_features, axis=1)
 ## Modeling and Result
 
 ### Content-Based Filtering
-
+Content-Based Filtering adalah pendekatan sistem rekomendasi yang menyarankan film berdasarkan kemiripan konten, dalam hal ini genre dari film. Menggunakan teknik TF-IDF (Term Frequency-Inverse Document Frequency), sistem mengekstrak fitur penting dari kolom genre dan mengubahnya menjadi vektor numerik. Lalu, dengan menghitung cosine similarity antara film yang ditonton pengguna dan film lainnya, sistem dapat merekomendasikan film yang mirip secara konten. Metode ini sangat berguna saat tidak ada data interaksi antar pengguna, dan cocok untuk pengguna baru karena hanya bergantung pada preferensi kontennya sendiri.
 ```
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -242,6 +242,8 @@ Content-Based Filtering (TF-IDF + Cosine Similarity)
 
 
 ### Collaborative Filtering
+
+Solusi Collaborative Filtering ini menggunakan pendekatan Neural Collaborative Filtering (NCF), di mana model neural network belajar dari interaksi antara pengguna (aktor/sutradara) dan film yang pernah mereka bintangi atau sutradarai. Karena tidak tersedia rating asli, sistem menggunakan dummy rating (nilai 1) untuk menyimulasikan interaksi positif. Model kemudian dilatih untuk memprediksi kemungkinan “kesukaan” terhadap film lain, dan merekomendasikan berdasarkan skor tertinggi. Solusi ini memungkinkan rekomendasi yang lebih personal, karena memperhitungkan pola kesamaan perilaku antar pengguna yang tidak terlihat secara eksplisit dalam konten film.
 
 - Algoritma: Neural Collaborative Filtering (dengan dummy rating)
 - Fungsi `recommend_collaborative(user_name, n=5)` untuk prediksi berdasarkan pengguna.
