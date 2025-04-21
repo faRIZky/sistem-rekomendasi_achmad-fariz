@@ -12,8 +12,8 @@ Hal-hal tersebut mendorong saya untuk mengangkat topik ini dalam proyek yang aka
 
 Referensi:
 
-- Choi, S. M., Ko, S. K., & Han, Y. S. (2012). A movie recommendation algorithm based on genre correlations. Expert Systems with Applications, 39(9), 8079-8085.
-- Goyani, M., & Chaurasiya, N. (2020). A review of movie recommendation system: Limitations, Survey and Challenges. ELCVIA. Electronic Letters on Computer Vision and Image Analysis, 19(3), 0018-37.
+- Choi, S. M., Ko, S. K., & Han, Y. S. (2012). A movie recommendation algorithm based on genre correlations. *Expert Systems with Applications, 39(9)*, 8079-8085.  
+- Goyani, M., & Chaurasiya, N. (2020). A review of movie recommendation system: Limitations, Survey and Challenges. *ELCVIA. Electronic Letters on Computer Vision and Image Analysis, 19(3)*, 0018-37.
 
 
 
