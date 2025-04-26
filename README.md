@@ -213,7 +213,7 @@ x_train_1, x_val_1, y_train_1, y_val_1 = train_test_split(X, y, test_size=0.2, r
 # Data Splitting untuk Skema 2: 70:30
 x_train_2, x_val_2, y_train_2, y_val_2 = train_test_split(X, y, test_size=0.3, random_state=42)
 ```
-Sekarang data dengan 2 skala pembagian yang berbeda telah siap untuk modeling colaborative filtering.
+Sekarang data dengan 2 skala pembagian yang berbeda telah siap untuk modeling collaborative filtering.
 ## Modeling and Result
 
 ### Content-Based Filtering
@@ -365,7 +365,8 @@ Nilai RMSE yang lebih rendah menunjukkan model semakin baik dalam memprediksi in
 
 Berikut adalah hasil rekomendasi collaborative filtering untuk setiap skema dengan input user "Robert De Niro":
 - `recommend_collaborative("Robert De Niro", model=model_1, n=5)`
-  | No | Title                   | Type  | Release Year |
+
+| No | Title                   | Type  | Release Year |
 |----|--------------------------|-------|--------------|
 | 1  | Titanic                  | MOVIE | 1997         |
 | 2  | Donnie Brasco            | MOVIE | 1997         |
@@ -378,6 +379,7 @@ Film-film yang direkomendasikan banyak berasal dari genre drama dan kriminal, se
 Ini menunjukkan model mampu menemukan hubungan user-item berdasarkan pola keterkaitan umum di data.
 
 - `recommend_collaborative("Robert De Niro", model=model_1, n=5)`
+
 | No | Title                                                   | Type  | Release Year |
 |----|---------------------------------------------------------|-------|--------------|
 | 1  | The Departed                                             | MOVIE | 2006         |
@@ -456,4 +458,49 @@ Evaluasi dilakukan pada 2 skema berbeda:
   - **Skema 1 lebih baik** dalam mempelajari hubungan user-item dibandingkan Skema 2.
   - Meskipun embedding size Skema 2 lebih besar (100 vs 50), learning rate yang lebih kecil (0.0005) dan data split (70:30) mungkin membuat model lebih lambat belajar/mengalami underfitting.
 - **Secara keseluruhan**, **Skema 1** dipilih sebagai model terbaik untuk rekomendasi berbasis Collaborative Filtering pada proyek ini.
+
+---
+### Hubungan Model Terhadap Business Understanding
+
+### 1. Apakah sudah menjawab setiap problem statement?
+
+- **Problem Statement 1:**  
+  > "Bagaimana cara membangun sistem rekomendasi yang dapat memberikan saran film atau acara TV yang relevan untuk pengguna berdasarkan konten dari film atau acara yang pernah mereka sukai sebelumnya?"  
+  **Sudah dijawab** melalui implementasi **Content-Based Filtering** yang memanfaatkan genre, deskripsi, dan skor film untuk mengukur kemiripan antar film dan memberikan rekomendasi berdasarkan konten yang mirip.
+
+- **Problem Statement 2:**  
+  > "Dengan memanfaatkan informasi dari pengguna lain yang memiliki ketertarikan serupa, bagaimana sistem dapat merekomendasikan film atau acara TV yang mungkin disukai pengguna namun belum pernah ditonton sebelumnya?"
+   **Sudah dijawab** melalui implementasi **Collaborative Filtering** berbasis model (menggunakan arsitektur RecommenderNet) yang mempelajari hubungan antar pengguna dan item tanpa memerlukan explicit rating.
+
+---
+
+### 2. Apakah berhasil mencapai setiap goals yang diharapkan?
+
+- **Goal 1:**  
+  >*Menghasilkan rekomendasi film atau acara TV yang dipersonalisasi menggunakan teknik Content-Based Filtering. **Tercapai** , sistem mampu merekomendasikan film yang relevan dengan film yang sebelumnya disukai pengguna berdasarkan fitur konten.
+
+- **Goal 2:**  
+  > Menghasilkan rekomendasi film atau acara TV menggunakan teknik Collaborative Filtering berdasarkan kemiripan pengguna.  
+  **Tercapai**, model RecommenderNet berhasil melatih embedding pengguna dan item, dan menghasilkan rekomendasi personalized untuk user yang diuji.
+
+---
+
+### 3. Apakah setiap solusi statement yang direncanakan berdampak?
+
+- **Content-Based Filtering:**
+  - Pendekatan dengan menggunakan TF-IDF dan cosine similarity terhadap genres, description, dan tmdb_score terbukti mampu menghasilkan rekomendasi relevan dengan precision yang cukup tinggi (berdasarkan hasil evaluasi Precision@K).
+  - Dampaknya adalah sistem mampu tetap merekomendasikan film meskipun pengguna baru (*cold start*) karena berbasis konten yang melekat pada film.
+
+- **Collaborative Filtering:**
+  - Pendekatan dengan RecommenderNet dan embedding matrix berhasil menemukan pola latent (tersembunyi) antar pengguna dan item, yang tercermin dari nilai RMSE validasi yang semakin menurun dari epoch ke epoch, terutama pada **Skema 1** yang lebih optimal.
+  - Dampaknya, sistem dapat memberikan rekomendasi yang personalized berdasarkan perilaku pengguna lain, memperkaya rekomendasi yang tidak hanya berdasarkan konten.
+
+---
+
+### 4. Kesimpulan
+
+Secara keseluruhan, **model dan pendekatan yang digunakan telah berhasil menjawab problem statement, mencapai goals yang diharapkan, serta memberikan dampak positif terhadap sistem rekomendasi**.  
+Sistem ini tidak hanya mampu memberikan rekomendasi berdasarkan konten yang mirip (content-based), tetapi juga mampu memperkaya rekomendasi dengan pola preferensi antar pengguna (collaborative filtering).
+
+Kedua model ini melengkapi satu sama lain dan membuat sistem rekomendasi menjadi lebih robust dan efektif dalam memenuhi kebutuhan bisnis.
 
