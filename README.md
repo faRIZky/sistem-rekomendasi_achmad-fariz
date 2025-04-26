@@ -392,6 +392,22 @@ Model Skema 2 (embedding size 100, learning rate 0.0005) digunakan untuk menghas
 Film yang direkomendasikan tetap memiliki keterkaitan dengan genre drama, crime, dan thriller.
 Pilihan film juga mencakup beberapa karya yang lebih spesifik, seperti dokumenter musik, tanpa mengambil kesimpulan performa model pada tahap ini.
 
+---
+Kelebihan dan Kekurangan Collaborative Filtering (Neural Collaborative Filtering dengan TensorFlow):
+- Kelebihan:
+  - Menangkap pola kompleks antar user dan item melalui embedding.
+
+  - Rekomendasi personalized: Bisa menyarankan film yang sangat berbeda kontennya, tapi sering disukai oleh user yang mirip.
+
+  - Model non-linear: Neural network menangkap relasi yang tidak bisa ditangkap metode klasik (misalnya dot product saja).
+
+- Kekurangan:
+  - Butuh banyak interaksi: Performanya sangat tergantung dari jumlah data user-item (di kasus ini pakai dummy rating).
+
+  - Cold-start problem: User/item baru yang belum punya cukup interaksi akan sulit direkomendasikan.
+
+  - Komputasi lebih berat: Dibandingkan dengan cosine similarity, proses training NCF butuh waktu dan resource lebih besar.
+
 ## Evaluation
 ## Evaluation: Content-Based Filtering
 
@@ -399,9 +415,17 @@ Pilihan film juga mencakup beberapa karya yang lebih spesifik, seperti dokumente
 
 - **Precision@K**:  
   Precision@K digunakan untuk mengukur seberapa relevan item-item yang direkomendasikan terhadap preferensi pengguna.  
-  Formula:  
->  Precision@K = Jumlah item relevan yang direkomendasi/ K
-  
+
+  - Cara Kerja Precision@K:
+    - Ambil K rekomendasi teratas untuk user.
+
+    - Hitung berapa item dari K tersebut yang benar-benar relevan.
+
+    - Precision dihitung sebagai:
+    >  Precision@K = Jumlah item relevan yang direkomendasi/ K
+    - Kriteria Relevansi:
+      Dalam kasus ini, film dikatakan relevan jika memiliki genre yang sama dengan film input.
+      
 - **Definisi Relevansi**:  
   Dalam konteks ini, item dikatakan *relevan* jika memiliki **genre** yang sama dengan genre film yang menjadi dasar rekomendasi.
 
@@ -429,9 +453,16 @@ Evaluasi dilakukan pada tiga contoh judul: **Narcos**, **Breaking Bad**, dan **P
 ### 1. Metrik Evaluasi yang Digunakan
 
 - **Root Mean Squared Error (RMSE)**:  
-  RMSE digunakan untuk mengukur seberapa besar rata-rata error (kesalahan prediksi) antara rating sebenarnya dan rating yang diprediksi oleh model.  
-  Formula:  
->  RMSE = sqrt( (1/n) * Σ (y_true - y_pred)² )
+  RMSE digunakan untuk mengukur seberapa besar rata-rata error (kesalahan prediksi) antara rating sebenarnya dan rating yang diprediksi oleh model.
+  - **Cara Kerja RSME**:
+    - Untuk setiap prediksi, hitung selisih (error) antara rating sebenarnya dengan rating hasil prediksi.
+    - Kuadratkan setiap error.
+
+    - Hitung rata-rata error kuadrat tersebut.
+
+    - Ambil akar kuadrat dari rata-ratanya.
+    - Formula:  
+    >  RMSE = sqrt( (1/n) * Σ (y_true - y_pred)² )
 
   
 - **Interpretasi RMSE**:
