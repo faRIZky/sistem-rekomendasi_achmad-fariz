@@ -409,7 +409,7 @@ Kelebihan dan Kekurangan Collaborative Filtering (Neural Collaborative Filtering
   - Komputasi lebih berat: Dibandingkan dengan cosine similarity, proses training NCF butuh waktu dan resource lebih besar.
 
 ## Evaluation
-## Evaluation: Content-Based Filtering
+### Evaluation: Content-Based Filtering
 
 ### 1. Metrik Evaluasi yang Digunakan
 
@@ -449,7 +449,7 @@ Evaluasi dilakukan pada tiga contoh judul: **Narcos**, **Breaking Bad**, dan **P
 - **Secara keseluruhan**, sistem Content-Based Filtering berhasil menunjukkan relevansi yang baik, mendukung tujuan **personalized recommendation** berbasis konten.
 
 ---
-## Evaluation: Collaborative Filtering
+### Evaluation: Collaborative Filtering
 ### 1. Metrik Evaluasi yang Digunakan
 
 - **Root Mean Squared Error (RMSE)**:  
