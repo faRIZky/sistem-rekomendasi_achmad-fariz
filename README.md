@@ -112,6 +112,7 @@ top_directors = credits_df[credits_df['role'] == 'DIRECTOR']['name'].value_count
 - Sutradara: Raúl Campos, Jan Suter
 
 ## Data Preparation
+## Data Preparation (Content-based Filtering)
 
 ### Duplicate Handling
 ```
@@ -176,14 +177,6 @@ titles_df['content'] = titles_df.apply(combine_features, axis=1)
 - Aktor & sutradara digabung berdasarkan `id` dan ditambahkan sebagai fitur teks.
 - Kolom baru `content` digabung dari title, deskripsi, genre, aktor, sutradara.
 
-## Modeling and Result
-
-### Content-Based Filtering
-Content-Based Filtering adalah pendekatan sistem rekomendasi yang menyarankan film berdasarkan kemiripan konten, dalam hal ini genre dari film. Menggunakan teknik TF-IDF (Term Frequency-Inverse Document Frequency), sistem mengekstrak fitur penting dari kolom genre dan mengubahnya menjadi vektor numerik. Lalu, dengan menghitung cosine similarity antara film yang ditonton pengguna dan film lainnya, sistem dapat merekomendasikan film yang mirip secara konten. Metode ini sangat berguna saat tidak ada data interaksi antar pengguna, dan cocok untuk pengguna baru karena hanya bergantung pada preferensi kontennya sendiri.
-
-- Algoritma: TF-IDF + Cosine Similarity
-- Fungsi `recommend_content_based(title, n=5)` mengembalikan top-N film mirip.
-  
 ```
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -197,45 +190,71 @@ cosine_sim = cosine_similarity(tfidf_matrix, tfidf_matrix)
 
 # Index mapping berdasarkan title
 indices = pd.Series(titles_df.index, index=titles_df['title']).drop_duplicates()
+```
+Langkah ini bertujuan untuk membangun sistem Content-Based Filtering. Dengan menggunakan TfidfVectorizer, kita mengubah teks pada kolom content menjadi representasi numerik berbasis frekuensi kata, lalu menghitung kemiripan antar film menggunakan cosine similarity. Hasilnya adalah matriks yang menunjukkan seberapa mirip satu film dengan yang lain berdasarkan kontennya, sehingga sistem bisa merekomendasikan film serupa.
 
-# Fungsi rekomendasi
-def recommend_content_based(title, n=5):
-    idx = indices.get(title)
-    if idx is None:
-        return f"Judul '{title}' tidak ditemukan dalam dataset."
-    
-    sim_scores = list(enumerate(cosine_sim[idx]))
-    sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
-    sim_scores = sim_scores[1:n+1]  # skip yang 0 (judul itu sendiri)
-    movie_indices = [i[0] for i in sim_scores]
-    
-    return titles_df[['title', 'type', 'release_year']].iloc[movie_indices]
+### Data Preparation (Collaborative Filtering)
+- Encode user, item dan berikan dummy rating
+Pada bagian ini, dilakukan proses encoding data supaya bisa digunakan dalam model Collaborative Filtering.
+Karena model butuh input numerik, maka:
+
+  - Nama aktor/sutradara (name) diubah menjadi user_id.
+
+  - ID film (id) diubah menjadi item_id.
+
+  - Ditambahkan kolom rating dummy, karena model matrix factorization memerlukan data interaksi user-item.
+
+Selanjutnya, karna kita akan menggunakan 2 skema pelatihan dengan split data yang berbeda, kita akan membuat 2 variable splitting data.
 
 ```
-Langkah ini bertujuan untuk membangun sistem **Content-Based Filtering**. Dengan menggunakan `TfidfVectorizer`, kita mengubah teks pada kolom `content` menjadi representasi numerik berbasis frekuensi kata, lalu menghitung kemiripan antar film menggunakan **cosine similarity**. Hasilnya adalah matriks yang menunjukkan seberapa mirip satu film dengan yang lain berdasarkan kontennya, sehingga sistem bisa merekomendasikan film serupa.
+# Data Splitting untuk Skema 1: 80:20
+x_train_1, x_val_1, y_train_1, y_val_1 = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Data Splitting untuk Skema 2: 70:30
+x_train_2, x_val_2, y_train_2, y_val_2 = train_test_split(X, y, test_size=0.3, random_state=42)
 ```
-recommend_content_based("Narcos", n=5)
-```
-Fungsi ini digunakan untuk **memberikan rekomendasi film** berbasis konten. Saat pengguna memasukkan judul film, sistem akan:
+Sekarang data dengan 2 skala pembagian yang berbeda telah siap untuk modeling colaborative filtering.
+## Modeling and Result
 
-1. Mencari indeks film tersebut dalam dataset.
-2. Mengambil skor kemiripan (cosine similarity) dengan semua film lainnya.
-3. Mengurutkan berdasarkan skor tertinggi dan **mengabaikan film itu sendiri**.
-4. Mengembalikan daftar top-`n` film paling mirip berdasarkan konten seperti deskripsi, genre, aktor, dll.
+### Content-Based Filtering
+Content-Based Filtering adalah pendekatan dalam sistem rekomendasi yang menyarankan item, seperti film, berdasarkan kemiripan konten — dalam kasus ini, genre film. Sistem ini menggunakan teknik TF-IDF (Term Frequency-Inverse Document Frequency) untuk mengekstraksi fitur penting dari kolom genre dan mengubahnya menjadi representasi vektor numerik. Setelah itu, sistem menghitung cosine similarity antara film yang sudah ditonton pengguna dengan film lainnya untuk menemukan rekomendasi yang paling mirip secara konten.
 
-Pendekatan ini memungkinkan rekomendasi yang tetap relevan bahkan tanpa interaksi pengguna lainnya.
+Prediksi hasil rekomendasi kemudian dievaluasi menggunakan metrik precision.
+Metode ini sangat efektif terutama ketika tidak tersedia data interaksi antar pengguna (cold start problem), serta cocok untuk pengguna baru karena hanya bergantung pada preferensi konten mereka sendiri, tanpa membutuhkan data pengguna lain.
 
-| Title                                | Type | Release Year |
-|--------------------------------------|------|---------------|
-| El cartel 2 - La guerra total        | SHOW | 2010          |
-| Narcos: Mexico                       | SHOW | 2018          |
-| Tijuana                              | SHOW | 2019          |
-| Apaches                              | SHOW | 2018          |
-| El Escamoso                          | SHOW | 2001          |
+Algoritma:
+Sistem rekomendasi ini menggunakan pendekatan Content-Based Filtering dengan menghitung kesamaan antar film berdasarkan representasi kontennya menggunakan cosine similarity. Film yang paling mirip dengan film input akan direkomendasikan.
 
-Sistem merekomendasikan 5 film di atas sebagai Top-5 kepada user.
+Fungsi:
 
-Content-Based Filtering (TF-IDF + Cosine Similarity)
+- `recommend_content_based(title, n=5)`
+Mengembalikan daftar top-N film yang paling mirip dengan film input berdasarkan skor cosine similarity. Jika judul tidak ditemukan dalam dataset, fungsi akan mengembalikan pesan error.
+
+- `get_genres(title)`
+Mengembalikan daftar genre dari film tertentu dalam bentuk list. Fungsi ini membaca data genre yang disimpan dalam format teks list.
+
+- `precision_at_k_detail_df(title, k=5)`
+Mengembalikan dataframe berisi daftar rekomendasi film, genre mereka, dan apakah mereka relevan (minimal ada satu genre yang cocok dengan film target). Selain itu, fungsi ini juga menghitung nilai Precision@k, yaitu persentase film relevan dari seluruh rekomendasi yang diberikan.
+  
+---
+
+Dilakukan evaluasi menggunakan fungsi `precision_at_k_detail_df` untuk film **Breaking Bad** dengan k=5. Berikut hasil rekomendasi dan evaluasinya:
+
+| Recommended Title | Genres | Relevant (Genre Match) |
+|:------------------|:-------|:-----------------------|
+| El Camino: A Breaking Bad Movie | action, crime, drama, thriller | ✅ |
+| Linewatch | crime, thriller, drama | ✅ |
+| W/ Bob & David | comedy | ❌ |
+| Better Call Saul | crime, drama | ✅ |
+| The Lovebirds | action, thriller, comedy, romance, crime | ✅ |
+
+**Hasil Evaluasi:**  
+- Nilai **Precision@5** untuk *Breaking Bad* adalah **0.80** atau **80%**.
+- Ini berarti 4 dari 5 film yang direkomendasikan memiliki kesamaan genre dengan film *Breaking Bad*.
+- Model menunjukkan performa cukup baik, walaupun masih ada 1 film (*W/ Bob & David*) yang kurang relevan secara genre.
+
+---
+- Kelebihan dan Kekurangan Content-Based Filtering (TF-IDF + Cosine Similarity):
 
 - Kelebihan:
   - Sederhana dan cepat: Menggunakan TF-IDF dan Cosine Similarity membuat perhitungannya efisien, bahkan untuk dataset menengah.
@@ -255,260 +274,186 @@ Content-Based Filtering (TF-IDF + Cosine Similarity)
 
 ### Collaborative Filtering
 
-Solusi Collaborative Filtering ini menggunakan pendekatan Neural Collaborative Filtering (NCF), di mana model neural network belajar dari interaksi antara pengguna (aktor/sutradara) dan film yang pernah mereka bintangi atau sutradarai. Karena tidak tersedia rating asli, sistem menggunakan dummy rating (nilai 1) untuk menyimulasikan interaksi positif. Model kemudian dilatih untuk memprediksi kemungkinan “kesukaan” terhadap film lain, dan merekomendasikan berdasarkan skor tertinggi. Solusi ini memungkinkan rekomendasi yang lebih personal, karena memperhitungkan pola kesamaan perilaku antar pengguna yang tidak terlihat secara eksplisit dalam konten film.
+Collaborative Filtering dalam proyek ini menggunakan pendekatan Neural Collaborative Filtering (NCF), yaitu memanfaatkan model neural network untuk mempelajari pola interaksi antara pengguna (aktor/sutradara) dan film yang pernah mereka bintangi atau sutradarai. Karena tidak tersedia rating eksplisit, sistem membuat dummy rating (nilai 1) untuk mensimulasikan interaksi positif.
+Model dilatih untuk memprediksi kemungkinan ketertarikan pengguna terhadap film lain dan merekomendasikan berdasarkan skor tertinggi.
+Pendekatan ini menghasilkan rekomendasi yang lebih personal, dengan memperhitungkan pola perilaku tersembunyi antar pengguna yang tidak dapat ditangkap hanya dari konten film.
 
-- Algoritma: Neural Collaborative Filtering (dengan dummy rating)
-- Fungsi `recommend_collaborative(user_name, n=5)` untuk prediksi berdasarkan pengguna.
+- Algoritma:
+Collaborative Filtering berbasis model Neural Network.
+Pendekatannya menggunakan embedding vector untuk memetakan user dan item ke dalam ruang dimensi yang lebih kecil, lalu menghitung prediksi rating berdasarkan dot product antara vektor user dan item. Model ini mempelajari pola preferensi pengguna dari data interaksi user-item (seperti ratings atau credits).
 
-Sebelum memulai, kita memerlukan re-prep data terlebih dahulu.
-```
-titles_df = pd.read_csv('/content/dataset/titles.csv')
-credits_df = pd.read_csv('/content/dataset/credits.csv')
+Model yang digunakan adalah RecommenderNet, dengan struktur sebagai berikut:
 
-from sklearn.preprocessing import LabelEncoder
+- Embedding untuk user dan item.
 
-# Encode user (name → user_id)
-user_encoder = LabelEncoder()
-credits_df['user_id'] = user_encoder.fit_transform(credits_df['name'])
-user2user_encoded = dict(zip(credits_df['name'], credits_df['user_id']))
-user_encoded2user = dict(zip(credits_df['user_id'], credits_df['name']))
+- Bias untuk user dan item.
 
-# Encode item (movie ID → item_id)
-item_encoder = LabelEncoder()
-credits_df['item_id'] = item_encoder.fit_transform(credits_df['id'])
-item2item_encoded = dict(zip(credits_df['id'], credits_df['item_id']))
-item_encoded2item = dict(zip(credits_df['item_id'], credits_df['id']))
+- Dot product antara user embedding dan item embedding ditambah bias, lalu dilalui fungsi aktivasi sigmoid untuk prediksi rating antara 0 dan 1.
 
-# Mapping nama aktor/sutradara jadi user_id
-credits_df['user_id'] = user_encoder.fit_transform(credits_df['name'])
+Fungsi:
+- `RecommenderNet`
 
-# Mapping ID film jadi item_id
-credits_df['item_id'] = item_encoder.fit_transform(credits_df['id'])
+  - Fungsi ini membangun model neural network sederhana untuk collaborative filtering.
 
-# Tambahkan dummy rating
-credits_df['rating'] = 1
-```
-- Encode nama pengguna (aktor/sutradara) menjadi user_id
-Menggunakan LabelEncoder untuk mengubah nama menjadi angka unik, karena model machine learning hanya bisa bekerja dengan data numerik.
+  - Mengembalikan output prediksi rating untuk pasangan (user_id, item_id) berdasarkan hasil pembelajaran dari data training.
 
-- Encode ID film menjadi item_id
-Sama seperti di atas, ID film diubah menjadi angka agar bisa diproses oleh model.
+- `recommend_collaborative(user_name, model, n=10)`
 
-- Buat mapping dictionary (user ↔ user_id, item ↔ item_id)
-Mapping ini mempermudah konversi antara nama dan ID saat membuat rekomendasi.
+  - Fungsi ini digunakan untuk menghasilkan rekomendasi film untuk user tertentu.
 
-- Tambahkan rating dummy (bernilai 1)
-Karena tidak tersedia data rating asli, kita mensimulasikan bahwa seorang aktor/sutradara “menyukai” film yang mereka terlibat di dalamnya. Ini memungkinkan kita membuat model collaborative filtering berbasis interaksi yang ada.
+  - Langkah-langkahnya:
 
-```
-X = credits_df[['user_id', 'item_id']].values
-y = credits_df['rating'].values
-```
-Langkah ini menyiapkan data untuk pelatihan model, di mana X berisi pasangan user dan item, dan y adalah dummy rating sebagai target prediksi.
+    - Encode nama user menjadi user ID.
 
-```
-from sklearn.model_selection import train_test_split
+    - Identifikasi item yang belum ditonton oleh user.
 
-x_train, x_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
-```
-Split data menjadi 80/20
+    - Prediksi rating untuk semua item tersebut menggunakan model.
 
-```
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers
+    - Pilih top-N item dengan skor prediksi tertinggi.
 
-class RecommenderNet(tf.keras.Model):
-    def __init__(self, num_users, num_items, embedding_size=50, **kwargs):
-        super(RecommenderNet, self).__init__(**kwargs)
-        self.user_embedding = layers.Embedding(
-            input_dim=num_users,
-            output_dim=embedding_size,
-            embeddings_initializer='he_normal',
-            embeddings_regularizer=keras.regularizers.l2(1e-6)
-        )
-        self.user_bias = layers.Embedding(num_users, 1)
-        
-        self.item_embedding = layers.Embedding(
-            input_dim=num_items,
-            output_dim=embedding_size,
-            embeddings_initializer='he_normal',
-            embeddings_regularizer=keras.regularizers.l2(1e-6)
-        )
-        self.item_bias = layers.Embedding(num_items, 1)
+    - Mengembalikan DataFrame berisi judul film, tipe, dan tahun rilis.
 
-    def call(self, inputs):
-        user_vector = self.user_embedding(inputs[:, 0])
-        user_bias = self.user_bias(inputs[:, 0])
-        item_vector = self.item_embedding(inputs[:, 1])
-        item_bias = self.item_bias(inputs[:, 1])
-        
-        dot_product = tf.reduce_sum(user_vector * item_vector, axis=1, keepdims=True)
-        x = dot_product + user_bias + item_bias
-        return tf.nn.sigmoid(x)
-```
-Kelas `RecommenderNet` ini membangun model collaborative filtering berbasis neural network. Model menggunakan embedding layer untuk merepresentasikan user dan item dalam vektor berdimensi rendah. Output prediksi adalah hasil perkalian dot product antara vektor user dan item, ditambah bias masing-masing, dan dilalui fungsi aktivasi sigmoid untuk menghasilkan skor antara 0 dan 1.
 
-```
-num_users = credits_df['user_id'].nunique()
-num_items = credits_df['item_id'].nunique()
+Dalam proyek ini, dilakukan dua skema pelatihan model RecommenderNet untuk eksperimen:
 
-model = RecommenderNet(num_users, num_items, embedding_size=50)
+- Skema 1 menggunakan ukuran embedding sebesar 50, dengan learning rate 0.001, dan data dibagi dengan rasio 80:20 (80% untuk training, 20% untuk validation).
 
-model.compile(
-    loss=tf.keras.losses.BinaryCrossentropy(),
-    optimizer=keras.optimizers.Adam(learning_rate=0.001),
-    metrics=[tf.keras.metrics.RootMeanSquaredError()]
-)
-```
-Langkah ini menginisialisasi dan meng-compile model `RecommenderNet`. Jumlah user dan item ditentukan dari data unik. Model di-compile dengan loss function `BinaryCrossentropy` karena rating bersifat biner (dummy = 1), dan metrik evaluasinya menggunakan `RootMeanSquaredError (RMSE)` untuk menilai seberapa baik prediksi model terhadap data aktual.
+- Skema 2 menggunakan ukuran embedding yang lebih besar, yaitu 100, dengan learning rate yang lebih kecil 0.0005, serta pembagian data 70:30 (70% untuk training, 30% untuk validation).
 
-```
-history = model.fit(
-    x=x_train,
-    y=y_train,
-    batch_size=32,
-    epochs=10,
-    validation_data=(x_val, y_val)
-)
+Perbedaan embedding size dan learning rate ini bertujuan untuk mengamati pengaruh kapasitas representasi dan kecepatan pembelajaran model terhadap performa rekomendasi. Sementara, variasi data split digunakan untuk mengevaluasi stabilitas generalisasi model dengan proporsi data training yang berbeda.
 
-plt.plot(history.history['root_mean_squared_error'], label='Train RMSE', color='blue')
-plt.plot(history.history['val_root_mean_squared_error'], label='Validation RMSE', color='red')
-plt.title('Model RMSE Over Epochs')
-plt.xlabel('Epoch')
-plt.ylabel('RMSE')
-plt.legend()
-plt.grid(True)
-plt.show()
+| Skema | Embedding Size | Learning Rate | Data Split 
+|------|----------------|---------------|------------|
+| Skema 1 | 50 | 0.001 | 80:20 |
+| Skema 2 | 100 | 0.0005 | 70:30 | 
 
-```
-<p align='center'>
-      <img src ="https://github.com/faRIZky/sistem-rekomendasi_achmad-fariz/blob/main/images/RMSE_eval.png?raw=true" alt="RMSE"> 
-</p>
+Berikut adalah hasil training dari model collaborative filtering Skema 1 dan Skema 2 menggunakan metrik **Root Mean Squared Error (RMSE)**.
+Nilai RMSE yang lebih rendah menunjukkan model semakin baik dalam memprediksi interaksi user-item.
 
-Model tidak menunjukkan tanda-tanda overfitting karena gap antara train dan validation RMSE tetap relatif kecil dan keduanya menurun seiring waktu. Ini mengindikasikan bahwa model belajar dengan baik tanpa kehilangan performa di data baru.
+### Hasil Training Skema 1
 
-```
-def recommend_collaborative(user_name, n=10):
-    # Cek user
-    if user_name not in user2user_encoded:
-        return f"User '{user_name}' tidak ditemukan."
+| Epoch | Loss  | Train RMSE | Val Loss | Val RMSE |
+|------|-------|------------|----------|----------|
+| 1    | 0.6715 | 0.4889     | 0.6000   | 0.4507   |
+| 2    | 0.5510 | 0.4227     | 0.5104   | 0.3971   |
+| 3    | 0.3841 | 0.3179     | 0.4444   | 0.3510   |
+| 4    | 0.2391 | 0.2112     | 0.4050   | 0.3175   |
+| 5    | 0.1611 | 0.1395     | 0.3781   | 0.2920   |
+| 6    | 0.1275 | 0.0985     | 0.3508   | 0.2684   |
+| 7    | 0.1135 | 0.0779     | 0.3185   | 0.2444   |
+| 8    | 0.1050 | 0.0663     | 0.2848   | 0.2214   |
+| 9    | 0.0981 | 0.0594     | 0.2528   | 0.2005   |
+| 10   | 0.0918 | 0.0555     | 0.2239   | 0.1820   |
 
-    # Encode user
-    user_id = user2user_encoded[user_name]
 
-    # Buat daftar semua item_id
-    all_item_ids = credits_df['item_id'].unique()
+### Hasil Training Skema 2
 
-    # Ambil semua item yang belum pernah ditonton user
-    items_watched_by_user = credits_df[credits_df['user_id'] == user_id]['item_id'].tolist()
-    items_not_watched = np.setdiff1d(all_item_ids, items_watched_by_user)
+| Epoch | Loss  | Train RMSE | Val Loss | Val RMSE |
+|------|-------|------------|----------|----------|
+| 1    | 0.6838 | 0.4951     | 0.6516   | 0.4785   |
+| 2    | 0.6230 | 0.4631     | 0.6082   | 0.4539   |
+| 3    | 0.5142 | 0.3999     | 0.5691   | 0.4286   |
+| 4    | 0.3814 | 0.3139     | 0.5384   | 0.4060   |
+| 5    | 0.2712 | 0.2330     | 0.5161   | 0.3870   |
+| 6    | 0.1971 | 0.1692     | 0.4992   | 0.3708   |
+| 7    | 0.1547 | 0.1254     | 0.4840   | 0.3563   |
+| 8    | 0.1325 | 0.0966     | 0.4674   | 0.3419   |
+| 9    | 0.1205 | 0.0781     | 0.4482   | 0.3274   |
+| 10   | 0.1141 | 0.0670     | 0.4271   | 0.3127   |
 
-    # Buat input untuk prediksi
-    user_input = np.array([[user_id, item_id] for item_id in items_not_watched])
 
-    # Prediksi skor dari model
-    predicted_ratings = model.predict(user_input).flatten()
 
-    # Ambil top-N rekomendasi
-    top_indices = predicted_ratings.argsort()[-n:][::-1]
-    top_item_ids = items_not_watched[top_indices]
+Berikut adalah hasil rekomendasi collaborative filtering untuk setiap skema dengan input user "Robert De Niro":
+- `recommend_collaborative("Robert De Niro", model=model_1, n=5)`
+  | No | Title                   | Type  | Release Year |
+|----|--------------------------|-------|--------------|
+| 1  | Titanic                  | MOVIE | 1997         |
+| 2  | Donnie Brasco            | MOVIE | 1997         |
+| 3  | Catch Me If You Can      | MOVIE | 2002         |
+| 4  | Les Misérables           | MOVIE | 2012         |
+| 5  | tick, tick... BOOM!      | MOVIE | 2021         |
 
-    # Ambil judul film dari item_id
-    recommended_titles = titles_df[titles_df['id'].isin([item_encoded2item[item] for item in top_item_ids])]
-    
-    return recommended_titles[['title', 'type', 'release_year']].reset_index(drop=True)
-```
-Fungsi recommend_collaborative() memberikan rekomendasi film untuk seorang user berdasarkan pendekatan collaborative filtering. Fungsi ini memprediksi skor kesukaan untuk semua film yang belum ditonton user, menggunakan model neural network. Lalu, sistem menampilkan N film dengan prediksi skor tertinggi sebagai rekomendasi yang dipersonalisasi.
+Model Skema 1 (embedding size 50, learning rate 0.001) digunakan untuk menghasilkan rekomendasi di atas.
+Film-film yang direkomendasikan banyak berasal dari genre drama dan kriminal, serta didominasi oleh film populer.
+Ini menunjukkan model mampu menemukan hubungan user-item berdasarkan pola keterkaitan umum di data.
 
-```
-recommend_collaborative("Robert De Niro", n=5)
-```
-| No | Title                                                             | Type  | Release Year |
-|----|-------------------------------------------------------------------|-------|---------------|
-| 1  | The Departed                                                     | MOVIE | 2006          |
-| 2  | The Fighter                                                      | MOVIE | 2010          |
-| 3  | Les Misérables                                                   | MOVIE | 2012          |
-| 4  | Rolling Thunder Revue: A Bob Dylan Story by Martin Scorsese     | MOVIE | 2019          |
-| 5  | tick, tick... BOOM!                                              | MOVIE | 2021          |
+- `recommend_collaborative("Robert De Niro", model=model_1, n=5)`
+| No | Title                                                   | Type  | Release Year |
+|----|---------------------------------------------------------|-------|--------------|
+| 1  | The Departed                                             | MOVIE | 2006         |
+| 2  | The Blind Side                                           | MOVIE | 2009         |
+| 3  | Starsky & Hutch                                          | MOVIE | 2004         |
+| 4  | Argo                                                     | MOVIE | 2012         |
+| 5  | Rolling Thunder Revue: A Bob Dylan Story by Martin Scorsese | MOVIE | 2019         |
 
-5 film di atas merupakan top 5 rekomendasi dari sistem.
-
-Collaborative Filtering (Neural Collaborative Filtering dengan TensorFlow)
-- Kelebihan:
-  - Menangkap pola kompleks antar user dan item melalui embedding.
-
-  - Rekomendasi personalized: Bisa menyarankan film yang sangat berbeda kontennya, tapi sering disukai oleh user yang mirip.
-
-  - Model non-linear: Neural network menangkap relasi yang tidak bisa ditangkap metode klasik (misalnya dot product saja).
-
-- Kekurangan:
-  - Butuh banyak interaksi: Performanya sangat tergantung dari jumlah data user-item (di kasus ini pakai dummy rating).
-
-  - Cold-start problem: User/item baru yang belum punya cukup interaksi akan sulit direkomendasikan.
-
-  - Komputasi lebih berat: Dibandingkan dengan cosine similarity, proses training NCF butuh waktu dan resource lebih besar.
+Model Skema 2 (embedding size 100, learning rate 0.0005) digunakan untuk menghasilkan daftar rekomendasi ini.
+Film yang direkomendasikan tetap memiliki keterkaitan dengan genre drama, crime, dan thriller.
+Pilihan film juga mencakup beberapa karya yang lebih spesifik, seperti dokumenter musik, tanpa mengambil kesimpulan performa model pada tahap ini.
 
 ## Evaluation
-**Evaluation & Business Understanding Integration**
+## Evaluation: Content-Based Filtering
+
+### 1. Metrik Evaluasi yang Digunakan
+
+- **Precision@K**:  
+  Precision@K digunakan untuk mengukur seberapa relevan item-item yang direkomendasikan terhadap preferensi pengguna.  
+  Formula:  
+>  Precision@K = Jumlah item relevan yang direkomendasi/ K
+  
+- **Definisi Relevansi**:  
+  Dalam konteks ini, item dikatakan *relevan* jika memiliki **genre** yang sama dengan genre film yang menjadi dasar rekomendasi.
 
 ---
 
-### 1. Evaluation for Content-Based Filtering (CBF)
+### 2. Hasil Evaluasi
 
-**Metric Used:** Cosine Similarity
+Evaluasi dilakukan pada tiga contoh judul: **Narcos**, **Breaking Bad**, dan **Peaky Blinders**, masing-masing dengan **K=5** (5 rekomendasi teratas).
 
-**Explanation:**
-Cosine Similarity mengukur sejauh mana dua vektor (dalam hal ini representasi TF-IDF dari film) serupa satu sama lain dengan menghitung nilai cosinus dari sudut di antara keduanya.
+| Judul              | Precision@5 | Interpretasi |
+|--------------------|-------------|--------------|
+| Narcos             | 1.00 (100%) | Semua film rekomendasi memiliki genre yang relevan. |
+| Breaking Bad       | 0.80 (80%)  | 4 dari 5 film rekomendasi memiliki genre yang relevan. |
+| Peaky Blinders     | 0.60 (60%)  | 3 dari 5 film rekomendasi memiliki genre yang relevan. |
 
-**Formula:**
-( A · B) / (||A|| * ||B||)
 
-**Interpretasi:**
-Nilai cosine similarity berkisar dari 0 hingga 1, di mana 1 berarti dua item sangat mirip. Dalam konteks ini, semakin tinggi nilai similarity antar film, semakin besar kemungkinan film tersebut relevan untuk direkomendasikan.
+### 3. Interpretasi Hasil
 
-**Business Connection:**
-- CBF menjawab kebutuhan pengguna untuk menemukan film yang mirip dengan yang sudah disukai sebelumnya.
-- Dengan memberikan rekomendasi berdasarkan genre dan deskripsi yang mirip, pengguna akan merasa sistem "mengerti selera mereka", meningkatkan retensi dan keterlibatan.
+- **Precision tinggi** (seperti pada *Narcos*) menunjukkan bahwa sistem berhasil merekomendasikan film yang sesuai dengan preferensi konten pengguna.
+- **Precision lebih rendah** (seperti *Peaky Blinders*) menunjukkan ada potensi perbaikan, misalnya dengan mempertimbangkan fitur tambahan seperti deskripsi, aktor, atau director.
+- **Secara keseluruhan**, sistem Content-Based Filtering berhasil menunjukkan relevansi yang baik, mendukung tujuan **personalized recommendation** berbasis konten.
+
+---
+## Evaluation: Collaborative Filtering
+### 1. Metrik Evaluasi yang Digunakan
+
+- **Root Mean Squared Error (RMSE)**:  
+  RMSE digunakan untuk mengukur seberapa besar rata-rata error (kesalahan prediksi) antara rating sebenarnya dan rating yang diprediksi oleh model.  
+  Formula:  
+>  RMSE = sqrt( (1/n) * Σ (y_true - y_pred)² )
+
+  
+- **Interpretasi RMSE**:
+  - Semakin kecil nilai RMSE, semakin baik model dalam melakukan prediksi.
+  - RMSE mendeteksi error besar dengan penalti lebih berat dibandingkan MAE, cocok untuk evaluasi sistem rekomendasi.
 
 ---
 
-### 2. Evaluation for Collaborative Filtering (CF)
+### 2. Hasil Evaluasi
 
-**Metric Used:** Root Mean Squared Error (RMSE)
+Evaluasi dilakukan pada 2 skema berbeda:
 
-**Explanation:**
-RMSE mengukur perbedaan antara prediksi model dengan data aktual. Semakin kecil RMSE, semakin akurat prediksi model.
-
-**Formula:**
-√((1/n) * Σ(yi - ŷi)²)
-
-**Interpretasi:**
-Nilai RMSE yang rendah menunjukkan bahwa model berhasil memperkirakan preferensi pengguna dengan baik.
-
-**Business Connection:**
-- RMSE digunakan untuk mengevaluasi apakah rekomendasi model mendekati kenyataan (meski berbasis dummy rating).
-- CF mampu merekomendasikan film yang mungkin tidak terpikirkan oleh pengguna tapi disukai oleh user serupa, membuka potensi penemuan film baru.
+| Skema | Embedding Size | Learning Rate | Data Split | Validation RMSE Akhir | Interpretasi |
+|------|----------------|---------------|------------|-----------------------|--------------|
+| Skema 1 | 50 | 0.001 | 80:20 | **0.1820** | Performa sangat baik, error kecil. |
+| Skema 2 | 100 | 0.0005 | 70:30 | 0.3127 | Error lebih besar dibanding Skema 1. |
 
 ---
 
-### 3. Relevance to Business Understanding
+### 3. Interpretasi Hasil
 
-**Problem Statements:**
-1. CBF menjawab kebutuhan untuk merekomendasikan film berdasarkan preferensi konten masa lalu.
-2. CF menjawab tantangan dalam menemukan film baru melalui perilaku pengguna lain yang mirip.
+- **Skema 1** menghasilkan RMSE validasi lebih rendah (**0.1820**) dibandingkan Skema 2 (**0.3127**).
+- Ini menunjukkan bahwa:
+  - **Skema 1 lebih baik** dalam mempelajari hubungan user-item dibandingkan Skema 2.
+  - Meskipun embedding size Skema 2 lebih besar (100 vs 50), learning rate yang lebih kecil (0.0005) dan data split (70:30) mungkin membuat model lebih lambat belajar/mengalami underfitting.
+- **Secara keseluruhan**, **Skema 1** dipilih sebagai model terbaik untuk rekomendasi berbasis Collaborative Filtering pada proyek ini.
 
-**Goals:**
-- CBF memberikan personalisasi berdasarkan konten.
-- CF memperluas rekomendasi ke film yang mungkin tidak memiliki konten serupa namun relevan berdasarkan pola pengguna lain.
-
-**Solution Approaches:**
-- Kombinasi dua pendekatan ini memberikan sistem yang lebih menyeluruh: CBF cocok untuk pengguna baru (cold start) dan CF baik untuk pengguna aktif.
-- Metrik evaluasi digunakan untuk memastikan bahwa model tidak hanya bekerja secara matematis, tapi juga memberikan nilai bisnis dengan meningkatkan user engagement dan kemungkinan eksplorasi konten.
-
----
-
-### Final Notes
-- Evaluasi dilakukan dengan metrik yang sesuai untuk masing-masing pendekatan.
-- Setiap metrik memiliki interpretasi yang berhubungan langsung dengan kualitas pengalaman pengguna.
-- Kombinasi CBF dan CF membentuk sistem rekomendasi yang kuat, scalable, dan adaptif terhadap berbagai kebutuhan pengguna Netflix.
