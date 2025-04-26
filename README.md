@@ -112,7 +112,7 @@ top_directors = credits_df[credits_df['role'] == 'DIRECTOR']['name'].value_count
 - Sutradara: Raúl Campos, Jan Suter
 
 ## Data Preparation
-## Data Preparation (Content-based Filtering)
+## Data Preparation: Content-based Filtering
 
 ### Duplicate Handling
 ```
@@ -193,7 +193,7 @@ indices = pd.Series(titles_df.index, index=titles_df['title']).drop_duplicates()
 ```
 Langkah ini bertujuan untuk membangun sistem Content-Based Filtering. Dengan menggunakan TfidfVectorizer, kita mengubah teks pada kolom content menjadi representasi numerik berbasis frekuensi kata, lalu menghitung kemiripan antar film menggunakan cosine similarity. Hasilnya adalah matriks yang menunjukkan seberapa mirip satu film dengan yang lain berdasarkan kontennya, sehingga sistem bisa merekomendasikan film serupa.
 
-### Data Preparation (Collaborative Filtering)
+### Data Preparation: Collaborative Filtering
 - Encode user, item dan berikan dummy rating
 Pada bagian ini, dilakukan proses encoding data supaya bisa digunakan dalam model Collaborative Filtering.
 Karena model butuh input numerik, maka:
@@ -216,7 +216,7 @@ x_train_2, x_val_2, y_train_2, y_val_2 = train_test_split(X, y, test_size=0.3, r
 Sekarang data dengan 2 skala pembagian yang berbeda telah siap untuk modeling collaborative filtering.
 ## Modeling and Result
 
-### Content-Based Filtering
+###  Modeling and Result: Content-Based Filtering
 Content-Based Filtering adalah pendekatan dalam sistem rekomendasi yang menyarankan item, seperti film, berdasarkan kemiripan konten — dalam kasus ini, genre film. Sistem ini menggunakan teknik TF-IDF (Term Frequency-Inverse Document Frequency) untuk mengekstraksi fitur penting dari kolom genre dan mengubahnya menjadi representasi vektor numerik. Setelah itu, sistem menghitung cosine similarity antara film yang sudah ditonton pengguna dengan film lainnya untuk menemukan rekomendasi yang paling mirip secara konten.
 
 Prediksi hasil rekomendasi kemudian dievaluasi menggunakan metrik precision.
@@ -272,7 +272,7 @@ Dilakukan evaluasi menggunakan fungsi `precision_at_k_detail_df` untuk film **Br
 
 
 
-### Collaborative Filtering
+###  Modeling and Result: Collaborative Filtering
 
 Collaborative Filtering dalam proyek ini menggunakan pendekatan Neural Collaborative Filtering (NCF), yaitu memanfaatkan model neural network untuk mempelajari pola interaksi antara pengguna (aktor/sutradara) dan film yang pernah mereka bintangi atau sutradarai. Karena tidak tersedia rating eksplisit, sistem membuat dummy rating (nilai 1) untuk mensimulasikan interaksi positif.
 Model dilatih untuk memprediksi kemungkinan ketertarikan pengguna terhadap film lain dan merekomendasikan berdasarkan skor tertinggi.
