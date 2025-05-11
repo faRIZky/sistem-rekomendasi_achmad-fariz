@@ -50,7 +50,7 @@ Dataset ini dibuat untuk mencantumkan semua tayangan yang tersedia di layanan st
 #### Deskripsi Dataset
 
 ##### 1. `credits.csv` (5 kolom)
-Dataset ini berisi lebih dari 50.000 data kredit dari aktor dan sutradara yang terlibat dalam judul-judul Netflix. Terdiri dari 5 kolom informasi sebagai berikut:
+Dataset ini berisi 77801 samples data kredit dari aktor dan sutradara yang terlibat dalam judul-judul Netflix. Terdiri dari 5 kolom informasi sebagai berikut:
 
 - `person_id`: ID individu berdasarkan JustWatch.
 - `id`: ID judul berdasarkan JustWatch.
@@ -59,7 +59,7 @@ Dataset ini berisi lebih dari 50.000 data kredit dari aktor dan sutradara yang t
 - `role` Peran sebagai ACTOR atau DIRECTOR.
 
 ##### 2. `titles.csv` (15 kolom)
-Dataset ini berisi lebih dari 5.000 judul unik yang tersedia di Netflix, dengan 15 kolom informasi sebagai berikut:
+Dataset ini berisi 5850 samples judul unik yang tersedia di Netflix, dengan 15 kolom informasi sebagai berikut:
 
 - `id`: ID judul berdasarkan JustWatch.
 - `title`: Nama judul film atau acara.
