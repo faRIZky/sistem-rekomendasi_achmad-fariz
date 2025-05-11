@@ -59,7 +59,7 @@ Dataset ini berisi 77801 samples data kredit dari aktor dan sutradara yang terli
 - `role` Peran sebagai ACTOR atau DIRECTOR.
 
 ##### 2. `titles.csv` (15 kolom)
-Dataset ini berisi 5850 samples judul unik yang tersedia di Netflix, dengan 15 kolom informasi sebagai berikut:
+Dataset ini berisi 5850 samples judul yang tersedia di Netflix, dengan 15 kolom informasi sebagai berikut:
 
 - `id`: ID judul berdasarkan JustWatch.
 - `title`: Nama judul film atau acara.
